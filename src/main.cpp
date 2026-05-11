@@ -1,11 +1,16 @@
 #include <Arduino.h>
 
+#include "usart.h"
+
 #define LED PB5
 #define BTN PD2
 
-bool pressed_last[4];
+#define CLOCK_SPEED 16000000UL
+#define BAUD 19200UL
 
-int main() {
+void test_buttons(void)
+{
+    bool pressed_last[4];
     DDRB |= (1 << LED);
 
     for (int i = 0; i < 4; i++) {
@@ -27,4 +32,11 @@ int main() {
             }
         }
     }
+}
+
+int main() {
+    USART0_init(CLOCK_SPEED, BAUD);
+    USART0_print("merge usart\n");
+
+    return 0;
 }
