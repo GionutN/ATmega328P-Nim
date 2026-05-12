@@ -1,4 +1,4 @@
-#include "usart.h"
+#include "core.h"
 
 void USART0_init(unsigned long fclk, unsigned long baud)
 {
@@ -26,7 +26,11 @@ void USART0_transmit(char data)
 char USART0_receive()
 {
     // wait while the buffer is empty
-    while(!(UCSR0A & (1<<RXC0)));
+    while(!(UCSR0A & (1<<RXC0))) {
+        if ((PINB & (1 << PB7)) == 0) {
+            return -1;
+        }
+    }
 
     return UDR0;
 }
