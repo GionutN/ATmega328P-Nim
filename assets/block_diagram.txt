@@ -1,0 +1,13 @@
+@startuml
+title Diagrama Block a proiectului
+
+[butoane] as butoane
+[ATMega324P] as mcu
+[sursa alimentare] as power
+[lcd] as lcd
+
+butoane--> mcu: GPIO
+power --> mcu : 3V
+mcu --> lcd: SPI
+
+@enduml
