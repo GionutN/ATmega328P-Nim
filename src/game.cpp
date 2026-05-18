@@ -1,28 +1,10 @@
 #include "game.h"
 
 #include "usart.h"
+#include "gfx.h"
 
 extern uint8_t REHF;
 extern bool MP;
-
-void _d_print_game(nim* game)
-{
-	const char* names = "ABCD";
-	for (int i = 0; i < HEAPS; i++) {
-        char buff[11];
-        buff[0] = names[i];
-        buff[1] = ' ';
-        char j;
-		for (j = 0; j < game->heaps[i]; j++) {
-            buff[j + 2] = '@';
-		}
-        buff[j + 2] = '\n';
-        buff[j + 3] = '\0';
-		USART0_print(buff);
-	}
-
-    USART0_print("\n\n");
-}
 
 bool game_ended(nim* game)
 {
@@ -50,9 +32,10 @@ void start_game(nim* game)
     PCMSK0 |= (1 << PCINT7);    // onboard button interrupts
 }
 
-void game_loop(nim* game)
+#ifdef __DEBUG
+void _d_game_loop(nim* game)
 {
-	_d_print_game(game);
+    _d_print_game(game);
 	while (true) {
         machine_move(game);
         _d_print_game(game);
@@ -69,6 +52,24 @@ void game_loop(nim* game)
         }
     }
 }
+#else
+void game_loop(nim* game)
+{
+	while (true) {
+        machine_move(game);
+        if (game_ended(game)) {
+            USART0_print("Win\n");
+            break;
+        }
+
+        player_move(game);
+        if (game_ended(game)) {
+            USART0_print("Lose\n");
+            break;
+        }
+    }
+}
+#endif
 
 void machine_move(nim* game) {
 	char num_2plus = 0; // count of heaps with at least 2 elements
@@ -135,6 +136,26 @@ void machine_move(nim* game) {
 	}
 }
 
+#ifdef __DEBUG
+void _d_print_game(nim* game)
+{
+	const char* names = "ABCD";
+	for (int i = 0; i < HEAPS; i++) {
+        char buff[11];
+        buff[0] = names[i];
+        buff[1] = ' ';
+        char j;
+		for (j = 0; j < game->heaps[i]; j++) {
+            buff[j + 2] = '@';
+		}
+        buff[j + 2] = '\n';
+        buff[j + 3] = '\0';
+		USART0_print(buff);
+	}
+
+    USART0_print("\n\n");
+}
+
 void _d_player_move(nim* game) {
     char taken = 0;
     char selected = -1;
@@ -172,35 +193,42 @@ void _d_player_move(nim* game) {
 
     game->lights_on -= taken;
 }
-
+#else
 void player_move(nim* game)
 {
 	char taken = 0;
-    char selected = 'e';
+    char selected = -1;
     char objects = 0;
 
     while (true) {
-        if ((PINB & (1 << BTN)) == 0) {
+        if (MP) {
+            MP = false;
             if (taken != 0) {
                 break;
             }
         }
 
-        char op = USART0_receive();
-        if (op == -1) {
-            continue;
-        }
-        if (selected == 'e') {
-            selected = op;
-            objects = game->heaps[selected - 'a'];
-        }
-        if (op == selected) {
-            // allow the player to go back to the original number of elements
-            taken = (taken + 1) % (objects + 1);
-            game->heaps[selected - 'a'] = objects - taken;
-            _d_print_game(game);
+        for (char i = 0; i < HEAPS; i++) {
+            if (REHF & (1 << (HB1 + i))) {
+                REHF &= ~(1 << (HB1 + i));
+                if (selected == -1) {
+                    selected = i;
+                    objects = game->heaps[selected];
+
+                    // if an empty heap was chosen, let the player press another button
+                    if (objects == 0) {
+                        selected = -1;
+                    }
+                }
+                if (i == selected) {
+                    // allow the player to go back to the original number of elements
+                    taken = (taken + 1) % (objects + 1);
+                    game->heaps[selected] = objects - taken;
+                }
+            }
         }
     }
 
     game->lights_on -= taken;
 }
+#endif
