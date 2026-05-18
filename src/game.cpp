@@ -1,9 +1,10 @@
 #include "game.h"
 
-#include "core.h"
 #include "usart.h"
 
-void print_game(nim* game)
+#include <avr/interrupt.h>
+
+void _d_print_game(nim* game)
 {
 	const char* names = "ABCD";
 	for (int i = 0; i < HEAPS; i++) {
@@ -29,11 +30,43 @@ bool game_ended(nim* game)
 
 void start_game(nim* game)
 {
+	// set game data
     game->lights_on = HEAPS * OPH;
     memset(game->heaps, OPH, HEAPS);
 
+	// enable buttons
     DDRB &= ~(1 << BTN);
-    PORTB |= (1 << BTN); 
+    PORTB |= (1 << BTN);
+
+	// heaps buttons used: PD2-PD5
+	DDRD &= ~(0xF << PD2);
+	PORTD |= (0xF << PD2);
+
+	// enable interrupts
+	sei();
+	PCICR |= (1 << PCIE2) | (1 << PCIE0);
+	PCMSK2 |= (0xF << PCINT18); // heap buttons interrupts
+    PCMSK0 |= (1 << PCINT7);    // onboard button interrupts
+}
+
+void game_loop(nim* game)
+{
+	_d_print_game(game);
+	while (true) {
+        machine_move(game);
+        _d_print_game(game);
+        if (game_ended(game)) {
+            USART0_print("Win\n");
+            break;
+        }
+
+        player_move(game);
+        _d_print_game(game);
+        if (game_ended(game)) {
+            USART0_print("Lose\n");
+            break;
+        }
+    }
 }
 
 void machine_move(nim* game) {
@@ -101,7 +134,7 @@ void machine_move(nim* game) {
 	}
 }
 
-void player_move(nim* game) {
+void _d_player_move(nim* game) {
     char taken = 0;
     char selected = 'e';
     char objects = 0;
@@ -125,7 +158,39 @@ void player_move(nim* game) {
             // allow the player to go back to the original number of elements
             taken = (taken + 1) % (objects + 1);
             game->heaps[selected - 'a'] = objects - taken;
-            print_game(game);
+            _d_print_game(game);
+        }
+    }
+
+    game->lights_on -= taken;
+}
+
+void player_move(nim* game)
+{
+	char taken = 0;
+    char selected = 'e';
+    char objects = 0;
+
+    while (true) {
+        if ((PINB & (1 << BTN)) == 0) {
+            if (taken != 0) {
+                break;
+            }
+        }
+
+        char op = USART0_receive();
+        if (op == -1) {
+            continue;
+        }
+        if (selected == 'e') {
+            selected = op;
+            objects = game->heaps[selected - 'a'];
+        }
+        if (op == selected) {
+            // allow the player to go back to the original number of elements
+            taken = (taken + 1) % (objects + 1);
+            game->heaps[selected - 'a'] = objects - taken;
+            _d_print_game(game);
         }
     }
 

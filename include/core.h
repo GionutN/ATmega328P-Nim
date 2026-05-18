@@ -11,4 +11,7 @@
 #define CLOCK_SPEED 16000000UL
 #define BAUD 19200UL
 
+#define HEAPS 4
+#define OPH 7
+
 #endif

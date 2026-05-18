@@ -2,54 +2,41 @@
 #include "usart.h"
 #include "game.h"
 
-void test_buttons(void)
-{
-    bool pressed_last[4];
-    DDRB |= (1 << LED);
-
-    for (int i = 0; i < 4; i++) {
-        DDRD &= ~(1 << (BTN + i));
-        PORTD |= (1 << (BTN + i));
-    }
-    
-    while (true) {
-        for (int i = 0; i < 4; i++) {
-            if ((PIND & (1 << (BTN + i))) == 0) {
-                if (pressed_last[i]);
-                else {
-                    pressed_last[i] = true;
-                    PORTB ^= (1 << LED);
-                }
-            }
-            else {
-                pressed_last[i] = false;
-            }
-        }
-    }
-}
+#define BTNT PD2
 
 static nim game;
+extern uint8_t REHF;
+extern bool MP;
 
 int main() {
+
     USART0_init(CLOCK_SPEED, BAUD);
     USART0_print("ATmega Nim USART\n");
 
     start_game(&game);
-    print_game(&game);
+    //_d_print_game(&game);
+    //game_loop(&game);
 
     while (true) {
-        machine_move(&game);
-        print_game(&game);
-        if (game_ended(&game)) {
-            USART0_print("Win\n");
-            break;
+        if (REHF & (1 << PD2)) {
+            REHF &= ~(1 << PD2);
+            USART0_print("1\n");
         }
-
-        player_move(&game);
-        print_game(&game);
-        if (game_ended(&game)) {
-            USART0_print("Lose\n");
-            break;
+        if (REHF & (1 << PD3)) {
+            REHF &= ~(1 << PD3);
+            USART0_print("2\n");
+        }
+        if (REHF & (1 << PD4)) {
+            REHF &= ~(1 << PD4);
+            USART0_print("3\n");
+        }
+        if (REHF & (1 << PD5)) {
+            REHF &= ~(1 << PD5);
+            USART0_print("4\n");
+        }
+        if (MP) {
+            MP = false;
+            USART0_print("M\n");
         }
     }
 

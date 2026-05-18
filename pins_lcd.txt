@@ -1,0 +1,9 @@
+from left to right
+vcc: 3V3 rail
+gnd: LS gnd
+cs: PB2
+reset: PD7
+a0: PD6
+sda: PB3
+sck: PB5
+led: 3V3 rail
