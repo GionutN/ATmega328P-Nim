@@ -3,8 +3,8 @@
 #include "usart.h"
 #include "gfx.h"
 
-extern uint8_t REHF;
-extern bool MP;
+extern volatile uint8_t REHF;
+extern volatile bool MP;
 
 bool game_ended(nim* game)
 {
@@ -30,6 +30,10 @@ void start_game(nim* game)
 	PCICR |= (1 << PCIE2) | (1 << PCIE0);
 	PCMSK2 |= (0xF << PCINT18); // heap buttons interrupts
     PCMSK0 |= (1 << PCINT7);    // onboard button interrupts
+
+    lcd_start_screen();
+    while (!MP);
+    MP = false;
 }
 
 #ifdef __DEBUG
@@ -55,26 +59,34 @@ void _d_game_loop(nim* game)
 #else
 void game_loop(nim* game)
 {
-	while (true) {
-        machine_move(game);
-        if (game_ended(game)) {
-            USART0_print("Win\n");
-            break;
-        }
+    for (char i = 0; i < HEAPS; i++) {
+        draw_heap(i, game->heaps[i], false);
+    }
 
-        player_move(game);
+    char heap;
+	while (true) {
+        heap = machine_move(game);
         if (game_ended(game)) {
-            USART0_print("Lose\n");
+            render_win();
             break;
         }
+        draw_heap(heap, game->heaps[heap], false);
+
+        heap = player_move(game);
+        if (game_ended(game)) {
+            render_lost();
+            break;
+        }
+        draw_heap(heap, game->heaps[heap], false);
     }
 }
 #endif
 
-void machine_move(nim* game) {
+char machine_move(nim* game) {
 	char num_2plus = 0; // count of heaps with at least 2 elements
 	char num_ones = 0;  // count of heaps with one element
-	for (int i = 0; i < HEAPS; i++) {
+    char heap;
+	for (char i = 0; i < HEAPS; i++) {
 		if (game->heaps[i] > 1) {
 			num_2plus++;
 		}
@@ -85,39 +97,41 @@ void machine_move(nim* game) {
 
 	if (num_2plus == 0) {
         // heaps with at most 1 element, make a random move
-		for (int i = 0; i < HEAPS; i++) {
+		for (char i = 0; i < HEAPS; i++) {
 			if (game->heaps[i] == 1) {
 				game->heaps[i]--;
+                heap = i;
 				break;
 			}
 		}
 		game->lights_on--;
 
-		return;
+		return heap;
 	}
 
 	char X = 0;
-	for (int i = 0; i < HEAPS; i++) {
+	for (char i = 0; i < HEAPS; i++) {
 		X ^= game->heaps[i];
 	}
 
 	if (X == 0) {
         // if the nimsum is 0, then there is no correct move
-		for (int i = 0; i < HEAPS; i++) {
+		for (char i = 0; i < HEAPS; i++) {
 			if (game->heaps[i] > 1) {
 				game->heaps[i]--;
+                heap = i;
 				break;
 			}
 		}
 		game->lights_on--;
 
-		return;
+		return heap;
 	}
 
     // only the parity of num_ones is of interest
 	num_ones &= 1;
 
-	for (int i = 0; i < HEAPS; i++) {
+	for (char i = 0; i < HEAPS; i++) {
 		char nimheapsum = X ^ game->heaps[i];
 		if (nimheapsum < game->heaps[i]) {
 			if (num_2plus == 1) {
@@ -131,9 +145,12 @@ void machine_move(nim* game) {
 
 			game->lights_on -= game->heaps[i] - nimheapsum;
 			game->heaps[i] = nimheapsum;
+            heap = i;
 			break;
 		}
 	}
+
+    return heap;
 }
 
 #ifdef __DEBUG
@@ -194,7 +211,7 @@ void _d_player_move(nim* game) {
     game->lights_on -= taken;
 }
 #else
-void player_move(nim* game)
+char player_move(nim* game)
 {
 	char taken = 0;
     char selected = -1;
@@ -212,7 +229,9 @@ void player_move(nim* game)
             if (REHF & (1 << (HB1 + i))) {
                 REHF &= ~(1 << (HB1 + i));
                 if (selected == -1) {
-                    selected = i;
+                    // make the first heap be the last and vice versa
+                    // so that the game screen corresponds to the buttons' positions
+                    selected = 3 - i;
                     objects = game->heaps[selected];
 
                     // if an empty heap was chosen, let the player press another button
@@ -220,15 +239,17 @@ void player_move(nim* game)
                         selected = -1;
                     }
                 }
-                if (i == selected) {
+                if ((3 - i) == selected) {
                     // allow the player to go back to the original number of elements
                     taken = (taken + 1) % (objects + 1);
                     game->heaps[selected] = objects - taken;
+                    draw_heap(selected, game->heaps[selected], true);
                 }
             }
         }
     }
 
     game->lights_on -= taken;
+    return selected;
 }
 #endif

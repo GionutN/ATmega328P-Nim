@@ -65,18 +65,18 @@ void draw_heap(char heap, char items, bool selected)
     }
 }
 
-void draw_turn_mark()
+void draw_turn_mark(bool player)
 {
     tft.fillRect(0, 0, 20, 128, ST77XX_BLACK);
     tft.setTextSize(2);
-    tft.setTextColor(ST77XX_GREEN);
+    tft.setTextColor(player ? ST77XX_GREEN : ST77XX_RED);
 
     tft.setCursor(10, 32);
-    tft.print("P");
+    tft.print(player ? "P" : "W");
     tft.setCursor(10, 48);
-    tft.print("L");
+    tft.print(player ? "L" : "A");
     tft.setCursor(10, 64);
-    tft.print("A");
+    tft.print(player ? "A" : "I");
     tft.setCursor(10, 80);
-    tft.print("Y");
+    tft.print(player ? "Y" : "T");
 }

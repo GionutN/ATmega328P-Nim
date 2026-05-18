@@ -1,9 +1,10 @@
 #include <avr/interrupt.h>
 
 #include "core.h"
+#include "usart.h"
 
 // a flag bit is 1 if the logic is HIGH, 0 otherwise
-uint8_t REHF = 0; // rising edge heaps flag
+volatile uint8_t REHF = 0; // rising edge heaps flag
 
 // a state bit is 1 if the buttons is not currently pressed
 static uint8_t PHBS = 0xF; // previous heap buttons state
@@ -37,7 +38,7 @@ ISR(PCINT2_vect)
     PHBS = crt_state;
 }
 
-bool MP = false;   // master button flags register
+volatile bool MP = false;   // master button flags register
 static bool PMS = true;   // previous master state
 
 ISR(PCINT0_vect)
