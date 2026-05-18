@@ -2,7 +2,8 @@
 
 #include "usart.h"
 
-#include <avr/interrupt.h>
+extern uint8_t REHF;
+extern bool MP;
 
 void _d_print_game(nim* game)
 {
@@ -60,7 +61,7 @@ void game_loop(nim* game)
             break;
         }
 
-        player_move(game);
+        _d_player_move(game);
         _d_print_game(game);
         if (game_ended(game)) {
             USART0_print("Lose\n");
@@ -136,29 +137,36 @@ void machine_move(nim* game) {
 
 void _d_player_move(nim* game) {
     char taken = 0;
-    char selected = 'e';
+    char selected = -1;
     char objects = 0;
 
     while (true) {
-        if ((PINB & (1 << BTN)) == 0) {
+        if (MP) {
+            MP = false;
             if (taken != 0) {
                 break;
             }
         }
 
-        char op = USART0_receive();
-        if (op == -1) {
-            continue;
-        }
-        if (selected == 'e') {
-            selected = op;
-            objects = game->heaps[selected - 'a'];
-        }
-        if (op == selected) {
-            // allow the player to go back to the original number of elements
-            taken = (taken + 1) % (objects + 1);
-            game->heaps[selected - 'a'] = objects - taken;
-            _d_print_game(game);
+        for (char i = 0; i < HEAPS; i++) {
+            if (REHF & (1 << (HB1 + i))) {
+                REHF &= ~(1 << (HB1 + i));
+                if (selected == -1) {
+                    selected = i;
+                    objects = game->heaps[selected];
+
+                    // if an empty heap was chosen, let the player press another button
+                    if (objects == 0) {
+                        selected = -1;
+                    }
+                }
+                if (i == selected) {
+                    // allow the player to go back to the original number of elements
+                    taken = (taken + 1) % (objects + 1);
+                    game->heaps[selected] = objects - taken;
+                    _d_print_game(game);
+                }
+            }
         }
     }
 

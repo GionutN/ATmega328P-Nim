@@ -6,7 +6,7 @@
 uint8_t REHF = 0; // rising edge heaps flag
 
 // a state bit is 1 if the buttons is not currently pressed
-uint8_t PHBS = 0xF; // previous heap buttons state
+static uint8_t PHBS = 0xF; // previous heap buttons state
 
 ISR(PCINT2_vect)
 {
@@ -38,7 +38,7 @@ ISR(PCINT2_vect)
 }
 
 bool MP = false;   // master button flags register
-bool PMS = true;   // previous master state
+static bool PMS = true;   // previous master state
 
 ISR(PCINT0_vect)
 {
