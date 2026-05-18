@@ -18,7 +18,7 @@ void _d_game_loop(nim* game);
 void _d_print_game(nim* game);
 void _d_player_move(nim* game);
 #else
-void game_loop(nim* game);
+bool game_loop(nim* game);
 char player_move(nim* game);
 #endif
 

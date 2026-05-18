@@ -2,9 +2,7 @@
 
 #include "usart.h"
 #include "gfx.h"
-
-extern volatile uint8_t REHF;
-extern volatile bool MP;
+#include "interrupts.h"
 
 bool game_ended(nim* game)
 {
@@ -16,24 +14,6 @@ void start_game(nim* game)
 	// set game data
     game->lights_on = HEAPS * OPH;
     memset(game->heaps, OPH, HEAPS);
-
-	// enable buttons
-    DDRB &= ~(1 << BTN);
-    PORTB |= (1 << BTN);
-
-	// heaps buttons used: PD2-PD5
-	DDRD &= ~(0xF << PD2);
-	PORTD |= (0xF << PD2);
-
-	// enable interrupts
-	sei();
-	PCICR |= (1 << PCIE2) | (1 << PCIE0);
-	PCMSK2 |= (0xF << PCINT18); // heap buttons interrupts
-    PCMSK0 |= (1 << PCINT7);    // onboard button interrupts
-
-    lcd_start_screen();
-    while (!MP);
-    MP = false;
 }
 
 #ifdef __DEBUG
@@ -57,8 +37,9 @@ void _d_game_loop(nim* game)
     }
 }
 #else
-void game_loop(nim* game)
+bool game_loop(nim* game)
 {
+    draw_turn_mark(true);
     for (char i = 0; i < HEAPS; i++) {
         draw_heap(i, game->heaps[i], false);
     }
@@ -67,16 +48,15 @@ void game_loop(nim* game)
 	while (true) {
         heap = machine_move(game);
         if (game_ended(game)) {
-            render_win();
-            break;
+            return true;
         }
         draw_heap(heap, game->heaps[heap], false);
 
         heap = player_move(game);
         if (game_ended(game)) {
-            render_lost();
-            break;
+            return false;
         }
+        // draw the selected heap back in white
         draw_heap(heap, game->heaps[heap], false);
     }
 }

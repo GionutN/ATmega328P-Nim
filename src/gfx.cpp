@@ -23,7 +23,7 @@ void lcd_start_screen()
     tft.print("Press start");
 }
 
-void render_win()
+void render_win(char won, char lost)
 {
     tft.fillScreen(ST77XX_BLACK);
     tft.setTextColor(ST77XX_WHITE);
@@ -31,9 +31,18 @@ void render_win()
     tft.setTextSize(2);
     tft.setCursor(38, 56);
     tft.println("YOU WON");
+
+    tft.setTextSize(1);
+    tft.setCursor(5, 80);
+    tft.println("Press start to play again");
+
+    tft.setCursor(5, 5);
+    tft.printf("W:%u", (unsigned)won);
+    tft.setCursor(5, 15);
+    tft.printf("L:%u", (unsigned)lost);
 }
 
-void render_lost()
+void render_lost(char won, char lost)
 {
     tft.fillScreen(ST77XX_BLACK);
     tft.setTextColor(ST77XX_WHITE);
@@ -41,6 +50,15 @@ void render_lost()
     tft.setTextSize(2);
     tft.setCursor(32, 56);
     tft.println("YOU LOST");
+
+    tft.setTextSize(1);
+    tft.setCursor(5, 80);
+    tft.println("Press start to play again");
+
+    tft.setCursor(5, 5);
+    tft.printf("W:%u", (unsigned)won);
+    tft.setCursor(5, 15);
+    tft.printf("L:%u", (unsigned)lost);
 }
 
 void clear_screen()
@@ -67,7 +85,7 @@ void draw_heap(char heap, char items, bool selected)
 
 void draw_turn_mark(bool player)
 {
-    tft.fillRect(0, 0, 20, 128, ST77XX_BLACK);
+    tft.fillRect(0, 0, 30, 128, ST77XX_BLACK);
     tft.setTextSize(2);
     tft.setTextColor(player ? ST77XX_GREEN : ST77XX_RED);
 
