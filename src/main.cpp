@@ -3,6 +3,7 @@
 #include "game.h"
 #include "gfx.h"
 #include "interrupts.h"
+#include "timer.h"
 
 static nim game;
 
@@ -23,6 +24,8 @@ void initialize_mcu() {
 	PCICR |= (1 << PCIE2) | (1 << PCIE0);
 	PCMSK2 |= (0xF << PCINT18); // heap buttons interrupts
     PCMSK0 |= (1 << PCINT7);    // onboard button interrupts
+
+    timer_init();
 
     lcd_start_screen();
     while (!MP);
