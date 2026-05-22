@@ -7,5 +7,6 @@ void render_lost(char won, char lost);
 void clear_screen();
 void draw_heap(char heap, char items, bool selected);
 void draw_turn_mark(bool player);
+void render_time(char seconds);
 
 #endif

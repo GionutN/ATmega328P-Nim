@@ -85,7 +85,7 @@ void draw_heap(char heap, char items, bool selected)
 
 void draw_turn_mark(bool player)
 {
-    tft.fillRect(0, 0, 30, 128, ST77XX_BLACK);
+    tft.fillRect(0, 0, 25, 128, ST77XX_BLACK);
     tft.setTextSize(2);
     tft.setTextColor(player ? ST77XX_GREEN : ST77XX_RED);
 
@@ -97,4 +97,13 @@ void draw_turn_mark(bool player)
     tft.print(player ? "A" : "I");
     tft.setCursor(10, 80);
     tft.print(player ? "Y" : "T");
+}
+
+void render_time(char seconds)
+{
+    tft.fillRect(4, 15, 20, 10, ST77XX_BLACK);
+    tft.setTextColor(ST77XX_WHITE);
+    tft.setCursor(5, 16);
+    tft.setTextSize(1);
+    tft.printf("%us", seconds);
 }

@@ -3,6 +3,7 @@
 #include "usart.h"
 #include "gfx.h"
 #include "interrupts.h"
+#include "timer.h"
 
 bool game_ended(nim* game)
 {
@@ -39,21 +40,24 @@ void _d_game_loop(nim* game)
 #else
 bool game_loop(nim* game)
 {
-    draw_turn_mark(true);
     for (char i = 0; i < HEAPS; i++) {
         draw_heap(i, game->heaps[i], false);
     }
-
+    
     char heap;
 	while (true) {
+        draw_turn_mark(false);
+        unsigned long start = millis();
+        while (millis() - start < 2000);
         heap = machine_move(game);
         if (game_ended(game)) {
             return true;
         }
         draw_heap(heap, game->heaps[heap], false);
 
+        draw_turn_mark(true);
         heap = player_move(game);
-        if (game_ended(game)) {
+        if (game_ended(game) || heap == 5) {
             return false;
         }
         // draw the selected heap back in white
@@ -196,8 +200,17 @@ char player_move(nim* game)
 	char taken = 0;
     char selected = -1;
     char objects = 0;
+    unsigned long start = get_millis();
 
     while (true) {
+        unsigned long crt = get_millis();
+        if (crt - start > 15000UL) {
+            return 5;
+        }
+        if (crt % 1000 == 0) {
+            render_time(15 - (char)((crt - start) / 1000));
+        }
+
         if (MP) {
             MP = false;
             if (taken != 0) {
