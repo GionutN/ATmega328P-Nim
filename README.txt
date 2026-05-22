@@ -1,4 +1,3 @@
-    The inspiration for this project is the Nimatron, an electromechanical machine exhibited at the 1939–1940 New York World's
     Overview
     This project is a hardware implementation of a Nim playing MCU. It uses an ATMega328P microcontroller (MCU) and an LCD display.
 
